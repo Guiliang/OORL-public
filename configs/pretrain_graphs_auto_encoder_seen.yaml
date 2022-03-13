@@ -1,0 +1,67 @@
+general:
+  task: "graph_autoenc"
+  random_seed: 42
+  use_this_many_data: -1
+  use_cuda: True  # disable this when running on machine without cuda
+  visdom: False
+
+  training:
+    batch_size: 64
+    max_episode: 5000000
+    smoothing_eps: 0.1
+    sample_number: 10
+    optimizer:
+      step_rule: 'radam'  # adam, radam
+      learning_rate: 0.00005
+      clip_grad_norm: 5
+      learning_rate_warmup_until: 1000
+    fix_parameters_keywords: [ ]  # ["rgcns", "word_embedding", "node_embedding", "relation_embedding", "word_embedding_prj"]
+    patience: 3  # >=1 to enable
+
+  evaluate:
+    run_eval: True
+    g_belief: False
+    batch_size: 48
+    max_target_length: 200
+
+  model:
+    use_pretrained_embedding: True
+    word_embedding_size: 300
+    word_embedding_trainable: False
+    node_embedding_size: 100
+    node_embedding_trainable: True
+    relation_embedding_size: 32
+    relation_embedding_trainable: True
+    embedding_dropout: 0.
+    encoder_layers: 1
+    action_scorer_layers: 1
+    encoder_conv_num: 5
+    block_hidden_dim: 32
+    gcn_hidden_dims: [32, 32, 32, 32, 32, 32]  # [64, 64, 64, 64, 64, 64] last one should equal to block hidden dim
+    gcn_highway_connections: True
+    gcn_num_bases: 3
+    real_valued_graph: True
+    n_heads: 1
+    dropout: 0.
+    attention_dropout: 0.
+    block_dropout: 0.
+#    vgae_hidden_dim: 64
+#    vgae_decoder_dim: 64
+    graph_decoding_method: 'ComplEx' # DistMult, ComplEx
+
+  checkpoint:
+    output_dir: '../saved_models/'
+    report_frequency: 1000  # episode
+    save_frequency: 10000  # episode
+    experiment_tag: 'graph_auto_encoder_pretrain'
+    load_pretrained: True  # during test, enable this so that the agent load your pretrained model
+    load_from_tag: ['graph_auto_encoder_pretrain']
+    load_from_label: ['Feb-28-2021']
+    load_partial_parameter_keywords: []  # "rgcns", "word_embedding", "node_embedding", "relation_embedding", "word_embedding_prj"
+    load_graph_generation_model_from_tag: 'None'
+    fix_loaded_parameters: False
+
+
+graph_auto:
+  data_path: "../source/dataset/sp.0.2"
+  graph_type: "seen"  # full, seen
