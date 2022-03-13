@@ -2,6 +2,8 @@
 
 # The dataset and word embeddings
 source/dataset/sp.0.2/*
+source/dataset/rp.0.1/*
+source/dataset/rl.0.2/*
 source/embeddings/crawl-300d-2M.vec.h5
 
 # Some tmp models for debugging

@@ -690,3 +690,74 @@ def compute_auto_encoder_acc(agent, graph_negative_mask, input_adj_m, real_adj_m
 
     return list_eval_acc, list_eval_loss, \
            list_score, list_soft_dist, tp_num, tn_num, fp_num, fn_num
+
+def evaluate_reward_predictor_goal(env, agent, eval_max_counter, valid_test="valid"):
+    env.split_reset(valid_test)
+    agent.eval()
+    true_positive_num, true_negative_num, false_positive_num, false_negative_num = 0, 0, 0, 0
+    soft_dist_all = []
+    eval_counter = 0
+    to_print = []
+
+    while (True):
+        if eval_max_counter is not None and eval_counter >= eval_max_counter:  # for debugging
+            break
+        current_triplets, previous_triplets, current_observations, previous_actions, current_rewards, \
+        current_goal_sentences = env.get_batch()
+        curr_batch_size = len(current_triplets)
+        train_correct_count = 0
+        current_adjacency_matrix = agent.get_graph_adjacency_matrix(current_triplets)
+        previous_adjacency_matrix = agent.get_graph_adjacency_matrix(previous_triplets)
+        # if "dynamic_reward_prediction" in agent.task:
+        #     loss, pred_rewards, real_rewards, correct_count, _ = \
+        #         agent.reward_prediction_supervised(current_adjacency_matrix=current_adjacency_matrix,
+        #                                            real_rewards=current_rewards,
+        #                                            current_observations=current_observations,
+        #                                            previous_actions=previous_actions,
+        #                                            goal_sentences=current_goal_sentences,
+        #                                            if_apply_rnn=agent.model.reward_predictor_apply_rnn,
+        #                                            if_loss_mean=True)
+        if "dynamic_reward_prediction" in agent.task:
+            loss, pred_rewards, real_rewards, correct_count, _ = \
+                agent.reward_prediction_dynamic(previous_adjacency_matrix=previous_adjacency_matrix,
+                                                real_rewards=current_rewards,
+                                                current_observations=current_observations,
+                                                previous_actions=previous_actions,
+                                                current_goal_sentences=current_goal_sentences,
+                                                if_apply_rnn=agent.model.reward_predictor_apply_rnn,
+                                                if_loss_mean=True)
+
+        for idx in range(len(current_triplets)):
+            pred_ = 1 - np.argmax(pred_rewards[idx])  # idx 0 is positive, idx 1 is negative
+            real_ = 1 - np.argmax(real_rewards[idx])  # idx 0 is positive, idx 1 is negative
+
+            if pred_ == 1 and real_ == 1:
+                true_positive_num += 1
+            elif pred_ == 1 and real_ == 0:
+                false_positive_num += 1
+            elif pred_ == 0 and real_ == 1:
+                false_negative_num += 1
+            elif pred_ == 0 and real_ == 0:
+                true_negative_num += 1
+
+            soft_dist_by_item = np.absolute(pred_rewards[idx] - real_rewards[idx])
+            soft_dist_all.append(np.sum(soft_dist_by_item))
+        if env.batch_pointer == 0 and env.type_idx_pointer == -1:
+            break
+        eval_counter += 1
+
+    log_msg_append = " | n_positive: {:3d} | n_negative: {:3d} |".format(true_positive_num + false_positive_num,
+                                                                         true_negative_num + false_negative_num)
+    if true_positive_num + false_positive_num > 0:
+        precision = float(true_positive_num) / (true_positive_num + false_positive_num)
+    else:
+        precision = 0
+    if true_positive_num + false_negative_num > 0:
+        recall = float(true_positive_num) / (true_positive_num + false_negative_num)
+    else:
+        recall = 0
+    acc = float(true_positive_num + true_negative_num) / (true_positive_num + true_negative_num + false_positive_num +
+                                                          false_negative_num)
+    soft_dist_avg = np.mean(np.asarray(soft_dist_all))
+
+    return precision, recall, acc, soft_dist_avg, log_msg_append

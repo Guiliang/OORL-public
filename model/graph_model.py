@@ -382,7 +382,8 @@ class KG_Manipulation(torch.nn.Module):
                 node_encodings=node_encodings,
                 node_embeddings=node_embeddings,
                 node_mask=node_mask,
-                hx=hx, cx=cx)
+                # hx=hx, cx=cx
+            )
             return predicted_encodings, hx_new, cx_new, attn_mask
 
         elif 'latent' in self.dynamic_loss_type:

@@ -1874,14 +1874,11 @@ class OORLAgent:
                                            )
 
         graph_diff_pos_sample_mask, graph_diff_neg_sample_mask, diff_triplet_index, \
-        input_adjacency_matrix, output_adjacency_matrix, actions, skipped_batch_dim, pos_mask, neg_mask = \
+        input_adjacency_matrix, output_adjacency_matrix, actions, pos_mask, neg_mask = \
             self.get_diff_sample_masks(prev_adjs=graph_triplets_adjs,
-                                       prev_triplets=None,
                                        target_adjs=next_graph_triplets_adjs,
-                                       target_triplets=None,
-                                       actions=selected_action,
-                                       log_file=log_file,
-                                       mode='train')
+                                       actions=selected_action
+                                       )
         filter_mask_batch = np.repeat(poss_triplets_mask, curr_load_data_batch_size, axis=0)
         graph_negative_mask_agg = filter_mask_batch - output_adjacency_matrix
         tmp_min = np.min(graph_negative_mask_agg)
@@ -2124,3 +2121,19 @@ class OORLAgent:
             return torch.mean(loss), predict_adj, real_adj
         else:
             return loss, predict_adj, real_adj
+
+    def get_goal_list_input(self, goal_list):
+        # action_candidate_list (list): batch x num_candidate of strings
+        batch_size = len(goal_list)
+        max_num_goals = max_len(goal_list)
+        input_goal_list = []
+        for i in range(batch_size):
+            word_level = self.get_word_input(goal_list[i], minimum_len=20)
+            input_goal_list.append(word_level)
+        max_word_num = max([item.size(1) for item in input_goal_list])
+
+        input_goals = np.zeros((batch_size, max_num_goals, max_word_num))
+        input_goals = to_pt(input_goals, self.use_cuda, type="long")
+        for i in range(batch_size):
+            input_goals[i, :input_goal_list[i].size(0), :input_goal_list[i].size(1)] = input_goal_list[i]
+        return input_goals

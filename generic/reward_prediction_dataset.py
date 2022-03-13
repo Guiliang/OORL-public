@@ -6,7 +6,7 @@ import torch
 from tqdm import tqdm
 import gym
 import numpy as np
-from generic.data_utils import GraphDataset, compute_current_triplets, adj_to_triplets, matching_object_from_obs, \
+from generic.data_utils import GraphDataset, adj_to_triplets, matching_object_from_obs, \
     diff_triplets
 from generic.model_utils import to_np
 
