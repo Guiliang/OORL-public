@@ -2,8 +2,6 @@ import torch
 import torch.nn.functional as F
 from torch.nn.parameter import Parameter
 
-from generic.model_utils import to_np
-
 
 class StackedRelationalGraphConvolution(torch.nn.Module):
     '''
@@ -160,14 +158,6 @@ class RelationalDistMult(torch.nn.Module):
 
     def reset_parameters(self):
         torch.nn.init.xavier_uniform_(self.relations_weights_bilinear.data)
-
-    # def _calc(self, h, t, r, mode=None):
-    #     if mode == 'head_batch':
-    #         score = h * (r * t)
-    #     else:
-    #         score = (h * r) * t
-    #     score = torch.sum(score, 1)
-    #     return score
 
 
 class RelationalGraphConvolution(torch.nn.Module):

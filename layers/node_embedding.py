@@ -9,7 +9,6 @@ class H5EmbeddingManager(object):
         f = h5py.File(h5_path, 'r')
         self.W = np.array(f['embedding'])
         print("embedding data type=%s, shape=%s" % (type(self.W), self.W.shape))
-        # self.id2word = f['words_flatten'][0].decode("utf-8")
         self.id2word = f['words_flatten'][0].decode("utf-8").split('\n')
         self.word2id = dict(zip(self.id2word, range(len(self.id2word))))
 

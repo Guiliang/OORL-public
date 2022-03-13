@@ -18,9 +18,8 @@ from agent.agent import OORLAgent
 from generic import reinforcement_learning_dataset
 from generic.data_utils import load_config, read_args, get_goal_sentence, generate_triplets_filter_mask, \
     adj_to_triplets, matching_object_from_obs, handle_ingame_rewards, process_facts, serialize_facts, \
-    extract_goal_sentence_from_obs, rl_force_explore, get_game_difficulty_level
+    extract_goal_sentence_from_obs, get_game_difficulty_level
 from generic.model_utils import HistoryScoreCache, load_graph_extractor, to_pt, to_np, memory_usage_psutil
-from planner.mcts_planner import MCTSPlanning
 
 
 def test(args):
@@ -290,13 +289,6 @@ def train(args):
                     # if step_rewards[bid] == -1:
                     #     step_rewards_by_goal[gid][bid] = -1
                 try:
-                    # print_actions.append(
-                    #     str({"{0} (Goal:{1}, Reward: {2})".format(chosen_actions_across_goal[0],
-                    #                                               goal_sentences_pad_step[0][
-                    #                                                   chosen_goal_index_across_all_goals[0]],
-                    #                                               step_rewards_by_goal[
-                    #                                                   chosen_goal_index_across_all_goals[0]][0]):
-                    #              chosen_values_across_goal[0]}) if still_running[0] else "--")
                     print_actions.append(
                         "{0}:{1} (Goal:{2}, Reward:{3})".format(chosen_actions_across_goal[0],
                                                                 chosen_values_across_goal[0],
@@ -338,30 +330,6 @@ def train(args):
             for goal_idx in range(num_goals):  # each step has multiple goals, thus multiple choice
 
                 force_actions = [None for bid in range(batch_size)]
-                if random.uniform(0, 1) > agent.unexplore_rate:
-                    force_actions = rl_force_explore(agent, infos, force_actions,
-                                                     goal_sentences_pad_step, goal_sentence_store_step,
-                                                     ingredients_step,
-                                                     action_candidate_list, selected_actions, goal_idx, manual_explore)
-
-                    for bid in range(batch_size):
-                        if force_actions[bid] is not None:
-                            force_action_indicator[bid][goal_idx] = 1
-
-                    if debug_mode:
-                        _force_candidate_action = []
-                        force_flag = False
-                        for bid in range(len(goal_sentences_pad_step)):
-                            if force_actions[bid] is None:
-                                _force_candidate_action.append(None)
-                            else:
-                                force_flag = True
-                                _force_candidate_action.append(action_candidate_list[bid][force_actions[bid]])
-                        if force_flag:
-                            print('enforcing explorations: {0}'.format(_force_candidate_action),
-                                  file=log_file, flush=True)
-
-                # input_candidate_word_ids = agent.get_action_candidate_list_input(action_candidate_list)
 
                 # generate adj_matrices
                 chosen_indices, action_values, node_encodings, node_mask = \
@@ -408,23 +376,6 @@ def train(args):
                                to_np(predicted_encodings), to_np(predicted_node_mask),
                                chosen_prev_actions_across_goal,
                                [goal_sentences_pad_step[bid][goal_idx] for bid in range(batch_size)]]
-                # observation_strings_add = []
-                # action_candidate_list_add = []
-                # chosen_indices_add = []
-                # new_adjacency_matrix_add = []
-                # chosen_prev_actions_across_goal_add = []
-                # goal_sentences_add = []
-                # for bid in range(batch_size):
-                #     if goal_mask[bid, goal_idx]:
-                #         observation_strings_add.append(observation_strings[bid])
-                #         action_candidate_list_add.append(action_candidate_list[bid])
-                #         chosen_indices_add.append(chosen_indices[bid])
-                #         new_adjacency_matrix_add.append(new_adjacency_matrix[bid])
-                #         chosen_prev_actions_across_goal_add.append(chosen_prev_actions_across_goal[bid])
-                #         goal_sentences_add.append(goal_sentences_pad_step[bid][goal_idx])
-                # replay_info = [observation_strings_add, action_candidate_list_add,
-                #                np.asarray(chosen_indices_add), np.asarray(new_adjacency_matrix_add),
-                #                chosen_prev_actions_across_goal_add, goal_sentences_add]
                 transition_cache_step.append(replay_info)
 
             transition_cache_all.append(transition_cache_step)
@@ -481,18 +432,9 @@ def train(args):
             rewards = to_pt(np.asarray(list(scores)) - np.asarray(prev_rewards), enable_cuda=agent.use_cuda,
                             type='float')
             prev_rewards = scores
-
-            # if agent.use_negative_reward:
-            #     step_rewards = [-1.0 if _lost else r for r, _lost in
-            #                     zip(step_rewards, infos["has_lost"])]  # list of float
-            #     step_rewards = [5.0 if _won else r for r, _won in zip(step_rewards, infos["has_won"])]  # list of float
             step_graph_rewards = [0.0 for _ in range(batch_size)]  ## adding for obs_gen
             # counting bonus
-            if agent.count_reward_lambda > 0:
-                step_revisit_counting_rewards = agent.get_binarized_count(observation_for_counting, update=True)
-                step_revisit_counting_rewards = [r * agent.count_reward_lambda for r in step_revisit_counting_rewards]
-            else:
-                step_revisit_counting_rewards = [0.0 for _ in range(batch_size)]
+            step_revisit_counting_rewards = [0.0 for _ in range(batch_size)]
             still_running_mask.append(still_running)
             game_rewards.append(step_rewards)
             graph_rewards.append(step_graph_rewards)
@@ -531,10 +473,6 @@ def train(args):
                     observation_strings, action_candidate_list, chosen_indices, \
                     node_encodings, node_mask, prev_action_strings, goal_sentences_pad_step = \
                         transition_cache_all[i][gid]
-                    # print(getsizeof(observation_strings))
-                    # print(getsizeof(triplets_pred))
-                    # print(getsizeof(new_adjacency_matrix))
-                    # print(getsizeof(action_candidate_list))
                     is_final = True
                     if still_running_mask_np[i][b] != 0:
                         is_final = False
@@ -681,42 +619,12 @@ def train(args):
                 if not debug_mode:
                     os.remove(planning_action_log_dir)
                     print('removing {0}'.format(planning_action_log_dir), file=log_file, flush=True)
-
-        #     elif curr_eval_performance == best_eval_performance_so_far:
-        #         if curr_eval_performance > 0.0:
-        #             agent.save_model_to_path(output_dir + "/" + agent.experiment_tag + "_model.pt")
-        #         else:
-        #             if curr_train_performance >= best_train_performance_so_far:
-        #                 agent.save_model_to_path(output_dir + "/" + agent.experiment_tag + "_model.pt")
         else:
             curr_eval_performance = 0.0
             detailed_scores = ""
             eval_game_points, eval_game_points_normalized, eval_game_step = 0, 0, 0
-            # curr_performance = curr_train_performance
-            # if curr_train_performance >= best_train_performance_so_far:
-            #     agent.save_model_to_path(save_to_path=save_to_path + "/" + agent.experiment_tag + "_model.pt",
-            #                              episode_no=episode_no,
-            #                              eval_acc=eval_acc,
-            #                              eval_loss=eval_loss,
-            #                              log_file=log_file)
-        # update best train performance
         if curr_train_performance >= best_train_performance_so_far:
             best_train_performance_so_far = curr_train_performance
-
-        # if prev_performance <= curr_performance:
-        #     i_am_patient = 0
-        # else:
-        #     i_am_patient += 1
-        # prev_performance = curr_performance
-
-        # if patient >= patience, resume from checkpoint
-        # if agent.patience > 0 and i_am_patient >= agent.patience:
-        #     if os.path.exists(output_dir + "/" + agent.experiment_tag + "_model.pt"):
-        #         print('reload from a good checkpoint...')
-        #         agent.load_pretrained_model(output_dir + "/" + agent.experiment_tag + "_model.pt",
-        #                                     load_partial_graph=False)
-        #         agent.update_target_net()
-        #         i_am_patient = 0
 
         if running_avg_game_points_normalized.get_avg() >= 0.95:
             perfect_training += 1
@@ -740,14 +648,6 @@ def train(args):
         with open(train_log_output_dir + "/" + json_file_name + '.json', 'a+') as outfile:
             outfile.write(_s + '\n')
             outfile.flush()
-
-        # if curr_performance == 1.0 and curr_train_performance >= 0.95:
-        # if curr_train_performance >= 0.95:
-        #     break
-        # if perfect_training >= 3:
-        #     break
-        # if episode_no > agent.max_episode:
-        #     break
 
 
 if __name__ == '__main__':

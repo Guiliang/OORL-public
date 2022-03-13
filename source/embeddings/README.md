@@ -1,0 +1,1 @@
+# Directory for the word embeddings

@@ -1,0 +1,6 @@
+player: player
+status: roasted, chopped, diced, burned, open, fried, grilled, consumed, closed, sliced, raw, uncut
+place: kitchen, pantry, bathroom, backyard, bedroom, garden, shed, driveway, street, corridor, supermarket, exit
+Furniture: barn door, bed, commercial glass door, fridge, front door, frosted-glass door, fiberglass door, couch, kitchen island, oven, patio chair, patio door, patio table, plain door, refrigerator, screen door, shelf, showcase, sliding door, sliding patio door, sofa, stove, table, toilet, wooden door, workbench
+Cooking Materials: banana, black pepper, block of cheese, carrot, chicken breast, chicken leg, chicken wing, cilantro, green apple, green bell pepper, green hot pepper, egg, flour, lettuce, milk, olive oil, orange bell pepper, parsley, peanut oil, pork chop, purple potato, recipe, red apple, red bell pepper, red hot pepper, red onion, red potato, red tuna, salt, sugar, tomato, vegetable oil, water, white onion, white tuna, yellow apple, yellow bell pepper, yellow onion, yellow potato
+items: inventory, bbq, cookbook, counter, knife, recipe book, toolbox, meal

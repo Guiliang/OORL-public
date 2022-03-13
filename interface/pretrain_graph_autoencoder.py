@@ -12,7 +12,7 @@ import torch
 import numpy as np
 from generic.state_prediction_dataset import SPData
 from agent.agent import OORLAgent
-from generic.data_utils import load_config, SampleBuffer, read_args, merge_sample_triplet_index
+from generic.data_utils import load_config, read_args, merge_sample_triplet_index
 from generic.model_utils import HistoryScoreCache, to_np
 from evaluate.evaluate_prediction import evaluate_graph_prediction, compute_auto_encoder_acc
 
@@ -119,8 +119,7 @@ def train(args):
             graph_negative_mask_list, sample_number, sample_triplet_index_list = \
                 agent.get_graph_negative_sample_mask(adjs=real_adjacency_matrix,
                                                      triplets=target_graph_triplets,
-                                                     sample_number=agent.sample_number,
-                                                     seed=episode_no, )
+                                                     sample_number=agent.sample_number, )
             curr_load_data_batch_size = len(target_graph_triplets)
             sample_triplet_index_agg = merge_sample_triplet_index(sample_triplet_index_list)
             graph_negative_mask_agg = np.zeros(shape=real_adjacency_matrix.shape)
