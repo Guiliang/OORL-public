@@ -372,6 +372,9 @@ def read_args():
     parser.add_argument("-f", "--fix_checkpoint", help="if restart from a fixed checkpoint",
                         dest="FIX_POINT",
                         default=None, required=False)
+    parser.add_argument("-n", "--test_model_name", help="the name of the model to be tested",
+                        dest="TEST_MODEL_NAME",
+                        default=None, required=False)
     parser.add_argument("-s", "--seed", help="the seed of randomness",
                         dest="SEED",
                         default=123,
@@ -1032,3 +1035,42 @@ def NegativeLogLoss(y_pred, y_true, mask=None, smoothing_eps=0.0):
         log_P = log_P * mask
     output = -torch.sum(log_P, dim=1)  # batch
     return output
+
+
+def check_action_repeat(action_list, repeat_nums=range(1, 5)):
+    max_num = 0
+    for repeat_num in repeat_nums:
+        count_dict = {}
+        for i in range(len(action_list)):
+            if i % repeat_num != 0:
+                continue
+            idx = len(action_list) - i
+            if idx - repeat_num * 2 < 0:
+                break
+            string_key_1 = '$'.join(action_list[idx - repeat_num:idx])
+            string_key_2 = '$'.join(action_list[idx - repeat_num * 2:idx - repeat_num])
+            if string_key_1 == string_key_2:
+                if string_key_1 in count_dict.keys():
+                    count_dict[string_key_1] += 1
+                else:
+                    count_dict[string_key_1] = 1
+        if len(count_dict.values()) > 0:
+            max_repeat_num = max(count_dict.values())
+            if max_repeat_num > max_num:
+                max_num = max_repeat_num
+    return max_num
+
+
+def process_fully_obs_facts(info_game, facts):
+    state = State(info_game.kb.logic, facts)
+    state = convert_link_predicates(state)
+    inventory_facts = set(find_predicates_in_inventory(state))
+    recipe_facts = set(find_predicates_in_recipe(state))
+    return set(state.facts) | inventory_facts | recipe_facts
+
+
+def convert_link_predicates(state):
+    actions = state.all_applicable_actions(_rules_to_convert_link_predicates())
+    for action in list(actions):
+        state.apply(action)
+    return state

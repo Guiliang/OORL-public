@@ -31,6 +31,7 @@ def train(args):
     time_1 = datetime.datetime.now()
     today = datetime.date.today()
     manual_explore = True
+    neg_rewards = False
     # min_unexplore_rate = 0.1
     config, debug_mode, log_file_path = load_config(args)
     if log_file_path is not None:
@@ -81,7 +82,8 @@ def train(args):
     else:
         save_date_str = args.FIX_POINT
     save_to_path = agent.output_dir + agent.experiment_tag + "/difficulty_level_{2}/saved_model_dqn_unsupervised_df-" \
-                                                             "{2}-mem-{3}-epi-{4}-maxstep-{5}-anneal-{6}-{7}{8}{9}{10}_{0}{1}.pt".format(
+                                                             "{2}-mem-{3}-epi-{4}-maxstep-{5}-anneal-{6}-" \
+                                                             "{7}{8}{9}{10}{11}_{0}{1}.pt".format(
         save_date_str,
         debug_msg,
         agent.difficulty_level,
@@ -91,6 +93,7 @@ def train(args):
         agent.epsilon_anneal_to,
         'cstr' if agent.apply_goal_constraint else '',
         '-scratch' if not manual_explore else '',
+        '_neg_reward' if neg_rewards else '',
         '-me-{0}'.format(agent.min_unexplore_rate) if agent.min_unexplore_rate is not None else '',
         '-seed-{0}'.format(args.SEED)
     )
@@ -156,7 +159,7 @@ def train(args):
         eval_env, num_eval_game = reinforcement_learning_dataset.get_evaluation_game_env(
             games_dir + config['rl']['data_path'],
             config['rl']['difficulty_level'],
-            "test", # 'valid'
+            "test",  # 'valid'
             requested_infos_eval,
             agent.eval_max_nb_steps_per_episode,
             agent.eval_batch_size)
@@ -424,9 +427,12 @@ def train(args):
             # step_rewards = [float(curr) - float(prev) for curr, prev in zip(scores, prev_rewards)]  # list of float
             step_rewards = handle_ingame_rewards(next_observations=observation_strings,
                                                  goal_sentences=goal_sentences_step,
+                                                 goal_sentence_stores=goal_sentence_store_step,
                                                  ingredients=ingredients_step,
                                                  actions=chosen_actions_across_goal,
                                                  log_file=log_file,
+                                                 apply_neg_rewards=neg_rewards,
+                                                 selected_actions_histories=selected_actions,
                                                  apply_goal_constraint=agent.apply_goal_constraint)
             game_points.append(copy.copy([float(curr) - float(prev) for curr, prev in zip(scores, prev_rewards)]))
             rewards = to_pt(np.asarray(list(scores)) - np.asarray(prev_rewards), enable_cuda=agent.use_cuda,
@@ -596,7 +602,7 @@ def train(args):
                 'running_avg_game_rewards': running_avg_game_rewards,
                 'running_avg_game_steps': running_avg_game_steps,
                 'running_avg_graph_rewards': running_avg_graph_rewards
-                                   }
+            }
             agent.save_model_to_path(save_to_path=save_to_path,
                                      episode_no=episode_no,
                                      eval_acc=curr_eval_performance,

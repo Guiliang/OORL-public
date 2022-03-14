@@ -4,8 +4,12 @@
 source/dataset/sp.0.2/*
 source/dataset/rp.0.1/*
 source/dataset/rl.0.2/*
+source/dataset/gt.0.1/*
 source/embeddings/crawl-300d-2M.vec.h5
+*.zip
 
 # Some tmp models for debugging
-*debug.pt
+*debug*
+*tmp*
+missing_words.txt
 

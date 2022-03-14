@@ -59,7 +59,7 @@ general:
     experiment_tag: 'rl_plannning'
     load_pretrained: True
     load_from_tag: ['graph_auto_encoder_pretrain', 'graph_dynamics_ims', 'reward_predictor']
-    load_from_label: ['', '', 'df-3_weight-0.2_Jul-07-2021']
+    load_from_label: ['Mar-04-2021', '', ''] # ['', '', 'df-3_weight-0.2_Jul-07-2021']
     data_label: ''
     fix_loaded_parameters: False
     load_partial_parameter_keywords: [] # "rgcns", "word_embedding", "node_embedding", "relation_embedding", "word_embedding_prj"

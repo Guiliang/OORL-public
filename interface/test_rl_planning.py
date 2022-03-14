@@ -56,15 +56,16 @@ def test_mcts(args):
                               debug_msg=debug_msg,
                               init_optimizer=False)
 
-    planning_load_path = agent_planner.output_dir + agent_planner.experiment_tag + \
-                         "/difficulty_level_{0}/saved_model_dqn{1}_{2}.pt".format(
-                             agent_planner.difficulty_level,
-                             '_unsupervised' if 'unsupervised' in agent_planner.task else '',
-                             args.FIX_POINT)
+    if args.FIX_POINT is not None:
+        planning_load_path = agent_planner.output_dir + agent_planner.experiment_tag + \
+                             "/difficulty_level_{0}/saved_model_dqn{1}_{2}.pt".format(
+                                 agent_planner.difficulty_level,
+                                 '_unsupervised' if 'unsupervised' in agent_planner.task else '',
+                                 args.FIX_POINT)
 
-    agent_planner.load_pretrained_model(planning_load_path,
-                                        log_file=log_file,
-                                        load_partial_graph=False)
+        agent_planner.load_pretrained_model(planning_load_path,
+                                            log_file=log_file,
+                                            load_partial_graph=False)
 
     # make game environments
     eval_requested_infos = agent_planner.select_additional_infos_lite()

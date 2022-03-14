@@ -11,7 +11,7 @@ import torch.nn.functional as F
 
 from generic import memory_buffer
 from generic.data_utils import load_graph_ids, _word_to_id, _words_to_ids, max_len, pad_sequences, preproc, \
-    compute_mask, NegativeLogLoss
+    compute_mask, NegativeLogLoss, serialize_facts, process_fully_obs_facts
 from generic.model_utils import to_pt, kl_divergence, LinearSchedule, to_np, ez_gather_dim_1, masked_mean
 from model.graph_model import KG_Manipulation
 
@@ -2048,6 +2048,40 @@ class OORLAgent:
 
         return chosen_indices, action_values, node_encodings, node_mask
 
+    def act_during_rl_test(self, node_encodings, node_mask,
+                           action_candidate_list, input_goals_ids,
+                           force_actions, random_rate):
+        input_candidate_word_ids = self.get_action_candidate_list_input(action_candidate_list)
+        pred_q_values, cand_mask = \
+            self.compute_q_values_multi_candidates(node_encodings,
+                                                   node_mask,
+                                                   input_candidate_word_ids,
+                                                   input_goals_ids)
+
+        action_indices_maxq, max_action_values = self.choose_maxQ_action(action_rank=pred_q_values,
+                                                                         action_mask=cand_mask,
+                                                                         if_return_tensor=False)
+
+        action_indices_random, random_action_values = self.choose_random_action(action_rank=pred_q_values,
+                                                                                action_unpadded=cand_mask)
+
+        rand_num = np.random.uniform(low=0.0, high=1.0, size=(len(node_encodings),))
+        less_than_epsilon = (rand_num < random_rate).astype("float32")  # batch
+        greater_than_epsilon = 1.0 - less_than_epsilon
+        chosen_indices = less_than_epsilon * action_indices_random + greater_than_epsilon * action_indices_maxq
+        action_values = less_than_epsilon * random_action_values + greater_than_epsilon * max_action_values
+
+        chosen_indices = chosen_indices.astype(int)
+        for bid in range(len(force_actions)):
+            force_index = force_actions[bid]
+            if force_index is not None:
+                chosen_indices[bid] = force_index
+                action_values[bid] = pred_q_values[bid][force_index]
+
+        chosen_actions = [item[idx] for item, idx in zip(action_candidate_list, chosen_indices)]
+
+        return chosen_indices, action_values, node_encodings, node_mask
+
     def choose_random_action(self, action_rank, action_unpadded=None):
         """
         Select an action randomly.
@@ -2137,3 +2171,49 @@ class OORLAgent:
         for i in range(batch_size):
             input_goals[i, :input_goal_list[i].size(0), :input_goal_list[i].size(1)] = input_goal_list[i]
         return input_goals
+
+    def get_game_info_at_certain_step_lite(self, obs, infos):
+        """
+        Get all needed info from game engine for training.
+        Arguments:
+            obs: Previous command's feedback for each game.
+            infos: Additional information for each game.
+        """
+        if self.graph_type == 'full':
+            return self.get_game_info_at_certain_step_fully_observable(obs, infos)
+
+        # batch_size = len(obs)
+        # observation_strings = [preproc(item, tokenizer=self.nlp) for item in obs]
+        observation_strings = preproc(obs, tokenizer=self.nlp)
+        commands_ = infos["admissible_commands"]
+        for cmd_ in [cmd for cmd in commands_ if cmd != "examine cookbook" and cmd.split()[0] in ["examine", "look"]]:
+            commands_.remove(cmd_)
+        # action_candidate_list = [preproc(item, tokenizer=self.nlp) for item in infos["admissible_commands"]]
+        # for b in range(batch_size):
+        #     ac = [preproc(item, tokenizer=self.nlp) for item in infos["admissible_commands"][b]]
+        #     action_candidate_list.append(ac)
+
+        return observation_strings, commands_
+
+    def get_game_info_at_certain_step_fully_observable(self, obs, infos):
+        """
+        Get all needed info from game engine for training.
+        Arguments:
+            obs: Previous command's feedback for each game.
+            infos: Additional information for each game.
+        """
+        batch_size = len(obs)
+        observation_strings = [preproc(item, tokenizer=self.nlp) for item in obs]
+        action_candidate_list = []
+        for b in range(batch_size):
+            ac = [preproc(item, tokenizer=self.nlp) for item in infos["admissible_commands"][b]]
+            action_candidate_list.append(ac)
+
+        # get new facts
+        current_triplets = []  # batch of list of triplets
+        for b in range(batch_size):
+            new_f = set(process_fully_obs_facts(infos["game"][b], infos["facts"][b]))
+            triplets = serialize_facts(new_f)
+            current_triplets.append(triplets)
+
+        return observation_strings, current_triplets, action_candidate_list, None, None
