@@ -1,6 +1,6 @@
 # OOTD: Object-Oriented Text Dynamics
 
-Python implementation for the paper [Learning Object-Oriented Dynamics for Planning from Text](https://openreview.net/pdf?id=B6EIcyp-Rb7). This code is based on the code of [GATA](https://github.com/xingdi-eric-yuan/GATA-public).
+Python implementation for the paper [Learning Object-Oriented Dynamics for Planning from Text](https://openreview.net/pdf?id=B6EIcyp-Rb7). This code is based on [GATA](https://github.com/xingdi-eric-yuan/GATA-public).
 
 ## Build the environment
 ```
@@ -17,15 +17,16 @@ curl -L -o crawl-300d-2M.vec.h5 "https://bit.ly/2U3Mde2"
 mv crawl-300d-2M.vec.h5 ./source/embeddings
 ```
 
-## Prepare the dataset
-- Download the pretraining datasets from https://aka.ms/twkg/sp.0.2.zip. Once downloaded, extract its contents into ```/source/dataset/```.
-- This dataset applies the games at difficulty level 3 in Textworld  as an example. The dataset is based on The dataset is based on [First TextWorld Problem (FTWP)](https://competitions.codalab.org/competitions/21557) competition. The dataset for other games can be generated from FTWP (we will revise and release the data generation code in the future.)
+## Important Reminder:
+- This code will use the games at **difficulty level 3 in Textworld** as an example (here the **difficulty level 3** corresponds to the **difficulty level 1 in our paper**).
+- For the rest of the code, you can always add ```-d 1``` after the command line (e.g., ```python run.py -d 1```). It will start the program under a debugging model, allowing debugging on the local machine with a limited GPU power. 
+- If you prefer checking the planning results, please directly go to **Part III**. We have provide some pre-trained models in this repo.
 
+## Prepare the dataset
+- Download the pretraining datasets from (fill later). Once downloaded, extract its contents into ```/source/dataset/```.
+- This dataset applies the games at difficulty level 3 in Textworld  as an example. The dataset is based on The dataset is based on [First TextWorld Problem (FTWP)](https://competitions.codalab.org/competitions/21557) competition. The dataset for other games can be generated from FTWP dataset (```wget https://bit.ly/2Mb4CBR -O rl.0.2.zip```) (we will revise and release the data generation code in the future.)
 
 ## Part I: Object-Supervised (OS)-OOTD
-**Important Reminder:**
-- This code will use the games at difficulty level 3 in Textworld  as an example (here the difficulty level 3 correspond to the **difficulty level 1** in our paper).
-- For the rest of the code, you can always add ```-d 1``` after the command line (e.g., ```python run.py -d 1```). It will start the program under a debugging model, allowing debugging on the local machine with a limited GPU power. 
 
 ### Graph Auto-Encoder
 We provide a well-trained graph auto-encoder in the ```./saved_models/graph_auto_encoder_pretrain/saved_model_ComplEx_seenGraph_Mar-04-2021.pt```. This model is trained by running:
@@ -117,10 +118,10 @@ python test_rl_planning.py ../configs/test_rl_with_planning_unsupervised_semi_go
 python test_rl_planning.py ../configs/train_rl_with_planning_df3.yaml -d 1 --test_mode mcts -t 0 -f df-3-mem-300000-epi-20000-maxstep-200-anneal-0.3-cstr_scratch_neg_reward-me-0.3-seed-123_Sept-26-2021_best
 ```
 
-If you get any help from this code, please cite
+If you can get some help from this code, please use the following bibtex:
 ```
 @inproceedings{
-liu2022learning,
+liu2022oorl,
 title={Learning Object-Oriented Dynamics for Planning from Text},
 author={Guiliang Liu and Ashutosh Adhikari and Amir-massoud Farahmand and Pascal Poupart},
 booktitle={International Conference on Learning Representations},
