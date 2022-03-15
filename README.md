@@ -23,7 +23,7 @@ mv crawl-300d-2M.vec.h5 ./source/embeddings
 - If you prefer checking the planning results, please directly go to **Part III**. We have provide some pre-trained models in this repo.
 
 ## Prepare the dataset
-- Download the pretraining datasets from (fill later). Once downloaded, extract its contents into ```/source/dataset/```.
+- Download the pretraining datasets from [link](https://drive.google.com/file/d/1AKAn33_e5ndOQqs9bPbx_IXSAMHTDymE/view?usp=sharing). Once downloaded, extract its contents into ```/source/dataset/```.
 - This dataset applies the games at difficulty level 3 in Textworld  as an example. The dataset is based on The dataset is based on [First TextWorld Problem (FTWP)](https://competitions.codalab.org/competitions/21557) competition. The dataset for other games can be generated from FTWP dataset (```wget https://bit.ly/2Mb4CBR -O rl.0.2.zip```) (we will revise and release the data generation code in the future.)
 
 ## Part I: Object-Supervised (OS)-OOTD
